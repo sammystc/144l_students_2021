@@ -1,0 +1,145 @@
+---
+title: "101821_2021_abundance_demo"
+output: github_document
+---
+
+# Goal
+
+This document shows how **individual bottle** bacterial abundance data from 2018 remineralization experiments were processed, QC'd and analyzed. It also provides an intro to data processing and analysis with RStudio and R Markdown.
+
+#Intro to R Markdown
+
+Create a new code chunk: 
+Shortcut for Mac: Command + option + i
+
+Load packages that we'll need to analyze our data
+```{r Load packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+```
+We can toggle on/off warnings in chunks if we don't want them in our final markdown file. 
+
+#Import Data
+```{r}
+excel_sheets("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx")
+
+#make comments using pound sign
+
+metadata <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx", sheet = "Metadata")
+
+glimpse(metadata)
+#unique(metadata$Bottle)
+
+data <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx", sheet = "Data")
+
+joined <- left_join(metadata, data) #attach data to metadata
+#joined right dataset to left one by using variables that are the same across two dataframes
+glimpse(joined)
+```
+#Prepare Data for Plotting
+
+We will convert the Date and Time column values from characters to dates, add columns with time elapsed for each treatment and convert data to cells/L because it will help us match up with the TOC data later. We will then subset the data for variables of interest and drop NA values.
+
+To do this, we are going to be using **piping**. Piping is an operation that allows us to write more efficint code. The way that we'll use it here is to manipulate our data sequentially. The pipe operator "%>%", which basically says like "first do one thing to the data THEN do this other thing." Every call that we invoke with an additional pipe is going to take place on the variable (dataframe) that we specifcy at the beginning. 
+```{r warning=FALSE}
+cells <- joined %>% 
+  mutate(Datetime = ymd_hm(Datetime), #splits apart Datetime as specified: years, months, days _ hours, minutes
+         cells_L = as.numeric(all_cells_uL) *1000000) %>% 
+  group_by(Treatment, Bottle) %>%
+#group our dataset so that we can calculate the time elapsed properly; group by date first then by bottle
+mutate(interv= interval(first(Datetime), Datetime),
+       s = as.numeric(interv),
+       hours = s/3600,
+       days = hours/24) %>%
+  ungroup() %>%
+  select(Experiment:DNA_Sample, cells_L, hours, days) %>% 
+  drop_na(cells_L)
+          glimpse(cells)
+
+```
+#Plot Growth Curves
+
+We will plot a growth curve for each bottle. Need cell abundance and days data.
+
+First, let's set some aesthetics for our plot. 
+```{r warning=FALSE}
+#assign hex colors to our different treatments
+custom.colors <- c("Control" = "#377EB8", "Kelp Exudate" = "#4DAF4A", "Kelp Exudate_Nitrate_Phosphate" = "#E41A1C", "Glucose_Nitrate_Phosphate" = "#FF7F00")
+
+#assign levels to control what order things appear in the legend 
+levels <- c("Control", "Kelp Exudate", "Kelp Exudate_Nitrate_Phosphate", "Glucose_Nitrate_Phosphate")
+
+#now let's use a handy package, ggplot to visualize our data
+
+cells %>% 
+  mutate(dna = ifelse(DNA_Sample == T, "*", NA)) %>%
+  ggplot(aes(x=days, y=cells_L, group = interaction(Treatment, Bottle))) + 
+  geom_line(aes(color = factor(Treatment, levels= levels)), size = 1)+
+  geom_point(aes(fill = factor(Treatment, levels = levels)), size = 3, color = "black", shape = 21) +
+  geom_text(aes(label = dna), size = 12, color = "#E41A1C") +
+  labs(x= "Days", y= expression(paste("Cells, L"^-1)), fill = "") + 
+  guides(color = "none") +
+  scale_color_manual(values = custom.colors) + 
+  scale_fill_manual(values = custom.colors)
+  #facet_grid(rows = "Treatment", scales = free)
+   
+```
+#Next Steps
+
+We can calculate:
+
+-total change in cells from initial condition to the end of the experiment
+-specific growth rate as the slope of ln(abundance) vs. time during exponential growth phase
+-doubling time as ln(2) divided by the specific growth rate
+-mean of each of these parameters across each treatment
+
+1st, we need to determine **where** exponential growth is occurring in each of our bottles, if it actually does. To do this, plot ln(abundance) vs. time.
+
+#Identify exponential phase of growth in our remin experiments
+
+**NOTE about logarithms in R**
+
+log(x) gives the natural log of x, not log base 10
+log10(x) gives the log base 10 
+log2(x) gives log base 2
+
+```{r}
+ln_cells <- cells %>%
+  group_by(Treatment, Bottle) %>%
+  mutate(ln_cells = log(cells_L),
+        diff_ln_cells = ln_cells - lag(ln_cells, default = first(ln_cells)))
+```
+Now, let's plot our newly calculated data!
+
+```{r fig.height=8, fig.width=6, warning=FALSE}
+ln_cells %>%
+  mutate(dna = ifelse(DNA_Sample == T, "*", NA)) %>%
+  ggplot(aes(x=days, y=diff_ln_cells, group = interaction(Treatment, Bottle))) + 
+  geom_line(aes(color = factor(Treatment, levels= levels)), size = 1)+
+  geom_point(aes(fill = factor(Treatment, levels = levels)), size = 3, color = "black", shape = 21) +
+  geom_text(aes(label = dna), size = 12, color = "#E41A1C") +
+  labs(x= "Days", y= expression(paste("∆ln_cells, L"^-1)), fill = "") + 
+  guides(color = "none") +
+  scale_color_manual(values = custom.colors) + 
+  scale_fill_manual(values = custom.colors) +
+  facet_wrap("Bottle", ncol = 2)
+```
+Exponential growth seems to be occurring between 0-1 days for most of the bottles and spikes up again between 3-4 days.
+
+Let's try plotting ln_cells to see if that can help us identify exponential growth in the control a little better.
+
+```{r fig.height=8, fig.width=6, warning=FALSE}
+ln_cells %>%
+  mutate(dna = ifelse(DNA_Sample == T, "*", NA)) %>%
+  ggplot(aes(x=days, y=ln_cells, group = interaction(Treatment, Bottle))) + 
+  geom_line(aes(color = factor(Treatment, levels= levels)), size = 1)+
+  geom_point(aes(fill = factor(Treatment, levels = levels)), size = 3, color = "black", shape = 21) +
+  geom_text(aes(label = dna), size = 12, color = "#E41A1C") +
+  labs(x= "Days", y= expression(paste("ln_cells, L"^-1)), fill = "") + 
+  guides(color = "none") +
+  scale_color_manual(values = custom.colors) + 
+  scale_fill_manual(values = custom.colors) +
+  facet_wrap("Bottle", ncol = 2)
+```
+

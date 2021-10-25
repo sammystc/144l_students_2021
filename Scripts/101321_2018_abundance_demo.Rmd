@@ -1,0 +1,60 @@
+---
+title: "101321_2018_abundance_demo"
+output: github_document
+---
+
+# Goal
+
+This document shows how **individual bottle** bacterial abundance data from 2018 remineralization experiments were processed, QC'd and analyzed. It also provides an intro to data processing and analysis with RStudio and R Markdown.
+
+#Intro to R Markdown
+
+Create a new code chunk: 
+Shortcut for Mac: Command + option + i
+
+Load packages that we'll need to analyze our data
+```{r Load packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+```
+We can toggle on/off warnings in chunks if we don't want them in our final markdown file. 
+
+#Import Data
+```{r}
+excel_sheets("~/test project/EEMB 144L/144l_students_2021/Input_Data/week3/144L_2018_BactAbund.xlsx")
+
+#make comments using pound sign
+
+metadata <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week3/144L_2018_BactAbund.xlsx", sheet = "Metadata")
+
+glimpse(metadata)
+#unique(metadata$Bottle)
+
+data <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week3/144L_2018_BactAbund.xlsx", sheet = "Data")
+
+joined <- left_join(metadata, data) #attach data to metadata
+#joined right dataset to left one by using variables that are the same across two dataframes
+glimpse(joined)
+```
+#Prepare Data for Plotting
+
+We will convert the Date and Time column values from characters to dates, add columns with time elapsed for each treatment and convert data to cells/L because it will help us match up with the TOC data later. We will then subset the data for variables of interest and drop NA values.
+
+To do this, we are going to be using **piping**. Piping is an operation that allows us to write more efficint code. The way that we'll use it here is to manipulate our data sequentially. The pipe operator "%>%", which basically says like "first do one thing to the data THEN do this other thing." Every call that we invoke with an additional pipe is going to take place on the variable (dataframe) that we specifcy at the beginning. 
+```{r}
+cells <- joined %>% 
+  mutate(Datetime = ymd_hm(Datetime), #splits apart Datetime as specified: years, months, days _ hours, minutes
+         cells_L = Cells_ml *1000) %>% 
+  group_by(Treatment, Bottle) %>%
+#group our dataset so that we can calculate the time elapsed properly; group by date first then by bottle
+mutate(interv= interval(first(Datetime), Datetime),
+       s = as.numeric(interv),
+       hours = s/3600,
+       days = hours/24) %>%
+  ungroup() %>%
+  select(Experiment:DNA_Sample, cells_L, hours, days) %>% 
+  drop_na(cells_L)
+          glimpse(cells)
+
+```
