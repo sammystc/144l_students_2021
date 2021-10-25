@@ -123,11 +123,6 @@ mutate(interv= interval(first(Datetime), Datetime),
   ungroup() %>%
   select(Experiment:DNA_Sample, cells_L, hours, days) %>% 
   drop_na(cells_L)
-```
-
-    ## Warning in mask$eval_all_mutate(quo): NAs introduced by coercion
-
-``` r
           glimpse(cells)
 ```
 
@@ -180,8 +175,6 @@ cells %>%
   scale_fill_manual(values = custom.colors)
 ```
 
-    ## Warning: Removed 40 rows containing missing values (geom_text).
-
 ![](10-18-21-2021_abundance_demo_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ``` r
@@ -232,8 +225,6 @@ ln_cells %>%
   facet_wrap("Bottle", ncol = 2)
 ```
 
-    ## Warning: Removed 40 rows containing missing values (geom_text).
-
 ![](10-18-21-2021_abundance_demo_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 Exponential growth seems to be occurring between 0-1 days for most of
 the bottles and spikes up again between 3-4 days.
@@ -254,7 +245,5 @@ ln_cells %>%
   scale_fill_manual(values = custom.colors) +
   facet_wrap("Bottle", ncol = 2)
 ```
-
-    ## Warning: Removed 40 rows containing missing values (geom_text).
 
 ![](10-18-21-2021_abundance_demo_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
