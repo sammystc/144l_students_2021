@@ -1,0 +1,142 @@
+---
+title: "2021_dapi_abundance submission"
+author: "Sammy Chan"
+date: "10/27/2021"
+output: github_document
+---
+# Goal
+
+This document shows how **individual bottle** bacterial abundance data from 2021 remineralization experiments were processed, QC'd and analyzed.  
+
+Load packages that we'll need to analyze our data. 
+```{r Load packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+```
+
+# Import Data 
+
+```{r}
+excel_sheets("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx")
+             
+metadata <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx", sheet = "Metadata")
+
+glimpse(metadata)
+
+dapi_data <- read_excel("~/test project/EEMB 144L/144l_students_2021/Input_Data/week4/144L_2021_BactAbund.xlsx", sheet = "DAPI_Data")
+glimpse(dapi_data)
+
+dapi_metadata <- metadata %>%
+  select(-Bottle) %>%
+  unique()
+glimpse(dapi_metadata)
+
+joined <-  left_join(dapi_metadata, dapi_data) 
+
+```
+
+Complete: prepare data, plot growth curves for Cells_L and Cell Biovolume data AND identify exponential growth (same as previous assignment now with the new data). 
+
+
+# Prepare Data
+
+Convert the Date and Time column values from characters to dates, add columns with time elapsed for each treatment, and convert to cells/L because it will help us match up with the TOC data later. Also drop NA values.
+
+```{r warning=FALSE}
+cells <- joined %>% 
+  mutate(Datetime = ymd_hm(Datetime), #splits apart Datetime as specified: years, months, days _ hours, minutes
+         cells_L = as.numeric(Cells_mL) *1000) %>% 
+  group_by(Treatment) %>%
+#group our dataset so that we can calculate the time elapsed properly; group by date first then by bottle
+mutate(interv= interval(first(Datetime), Datetime),
+       s = as.numeric(interv),
+       hours = s/3600,
+       days = hours/24) %>%
+  ungroup() %>%
+  select(Experiment:DNA_Sample, cells_L, hours, days) %>% 
+  drop_na(cells_L)
+          glimpse(cells)
+
+```
+
+
+# Plot Growth Curves
+
+Plot growth curves for each treatment using DAPI cell abundance and biovolume data. 
+
+## Cell Abundance Growth Curve
+
+```{r warning=FALSE}
+#assign hex colors to our different treatments
+custom.colors <- c("Control" = "#377EB8", "Kelp Exudate" = "#4DAF4A", "Kelp Exudate_Nitrate_Phosphate" = "#E41A1C", "Glucose_Nitrate_Phosphate" = "#FF7F00")
+
+#assign levels to control what order things appear in the legend 
+levels <- c("Control", "Kelp Exudate", "Kelp Exudate_Nitrate_Phosphate", "Glucose_Nitrate_Phosphate")
+
+#now let's use a handy package, ggplot to visualize our data
+
+cells %>% 
+  mutate(dna = ifelse(DNA_Sample == T, "*", NA)) %>%
+  ggplot(aes(x=days, y=cells_L, group = interaction(Treatment))) + 
+  geom_line(aes(color = factor(Treatment, levels= levels)), size = 1)+
+  geom_point(aes(fill = factor(Treatment, levels = levels)), size = 3, color = "black", shape = 21) +
+  geom_text(aes(label = dna), size = 12, color = "#E41A1C") +
+  labs(x= "Days", y= expression(paste("Cells, L"^-1)), fill = "") + 
+  guides(color = "none") +
+  scale_color_manual(values = custom.colors) + 
+  scale_fill_manual(values = custom.colors)
+  #facet_grid(rows = "Treatment", scales = free)
+   
+```
+
+Q: What differences between the treatments do you observe? Does this make sense in the context of the oxygen drawdown data (pictured below)?
+
+A: GNP treatment had the highest cell abundance while the kelp exudate treatment had the lowest. This makes sense because the GNP treatment had the most cells, therefore, they consume the most oxygen (matches oxygen drawdown data). However, while the kelp treatment consumed the second most amount of oxygen, it still had the lowest cell abundance.
+
+Oxygen Drawdown: 
+
+![O2 drawdown](EEMB144_remin_autoBOD.png)
+
+## Cell Biovolume Growth Curve
+```{r}
+cells <- joined %>% 
+  mutate(Datetime = ymd_hm(Datetime), #splits apart Datetime as specified: years, months, days _ hours, minutes
+         cells_L = as.numeric(Cells_mL) *1000) %>% 
+  group_by(Treatment) %>%
+#group our dataset so that we can calculate the time elapsed properly; group by date first then by bottle
+mutate(interv= interval(first(Datetime), Datetime),
+       s = as.numeric(interv),
+       hours = s/3600,
+       days = hours/24) %>%
+  ungroup() %>%
+  drop_na(cells_L)
+          glimpse(cells)
+```
+
+
+```{r warning=FALSE}
+#assign hex colors to our different treatments
+custom.colors <- c("Control" = "#377EB8", "Kelp Exudate" = "#4DAF4A", "Kelp Exudate_Nitrate_Phosphate" = "#E41A1C", "Glucose_Nitrate_Phosphate" = "#FF7F00")
+
+#assign levels to control what order things appear in the legend 
+levels <- c("Control", "Kelp Exudate", "Kelp Exudate_Nitrate_Phosphate", "Glucose_Nitrate_Phosphate")
+
+#now let's use a handy package, ggplot to visualize our data
+
+cells %>% 
+  mutate(dna = ifelse(DNA_Sample == T, "*", NA)) %>%
+  ggplot(aes(x=days, y=Mean_Biovolume_um3_cell, group = interaction(Treatment))) + 
+  geom_line(aes(color = factor(Treatment, levels= levels)), size = 1)+
+  geom_point(aes(fill = factor(Treatment, levels = levels)), size = 3, color = "black", shape = 21) +
+  geom_text(aes(label = dna), size = 12, color = "#E41A1C") +
+  guides(color = "none") +
+  scale_color_manual(values = custom.colors) + 
+  scale_fill_manual(values = custom.colors)
+  #facet_grid(rows = "Treatment", scales = free)
+   
+```
+
+Q: What differences do you notice between the cell abundance data and the cell biovolume data? 
+
+A: We can see that the GNP treatment actually had the highest mean biovolume while kelp exudate treatment had the lowest mean biovolume. This might help explain some contradictions within the first plot. It is possible that there is difference in cell size. For example if grazing is occurring in the kelp exudate treatment, the grazing bacterioplankton might be selectively grazing on the larger bacteria, leaving the small bacterioplankton to consume the majority of O2. 
