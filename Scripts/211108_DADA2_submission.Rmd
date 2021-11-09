@@ -1,6 +1,6 @@
 ---
 title: "DADA2"
-author: "Your Name"
+author: "Sammy Chan"
 date: "11/8/2021"
 output: github_document
 ---
@@ -8,13 +8,23 @@ output: github_document
 This script processes trimmed (w/o primers) sequences through the [DADA2 (1.18) pipeline](https://benjjneb.github.io/dada2/tutorial.html). 
 
 # Install and load DADA2 and Shortread from Bioconductor
+```{r}
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+ # install.packages("BiocManager")
+#BiocManager::install(version = '3.14')
+    #BiocManager::install(version = '3.11')
+#BiocManager::install("dada2", version = "3.14")
+#install.packages("Matrix")
+```
+
+
 
 uncomment (remove the #'s preceding each line of code) the following code to install the required packages. This may take a few minutes.
 ```{r}
 #if (!requireNamespace("BiocManager", quietly = TRUE))
-#    install.packages("BiocManager")
-#BiocManager::install("dada2", version = '3.14')
+ #  install.packages("BiocManager")
 #BiocManager::install("ShortRead")
+#  install.packages("tidyverse")
 ```
 
 # Load packages
@@ -22,6 +32,7 @@ uncomment (remove the #'s preceding each line of code) the following code to ins
 library(tidyverse)
 library(dada2)
 library(ShortRead)
+library(Matrix)
 ```
 
 # Import data
@@ -38,7 +49,7 @@ OR by:
 ```{r}
 #save the path to the directory with a COPY of your unzipped fastq files that you WILL work with. MAKE SURE YOU HAVE ANOTHER DIRECTORY WITH THE FILES THAT YOU WILL NEVER DIRECTLY WORK WITH. 
 
-path <- "~/Documents/144l_students_2021/Input_Data/week7/ACIDD_Remin_fastq" #make sure there is no / at the end of the path
+path <- "~/Desktop/144l_students_2021/Input_Data/week 7/ACIDD_Remin_fastq" #make sure there is no / at the end of the path
 #also make sure there are no unzipped files in this directory
 
 #store the names of fwd and rv files as lists
@@ -90,7 +101,7 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs[[1]]),
 
 Q1: Why do we see primers in the reverse complement of FWD.ReverseReads and REV.ForwardReads? What will we use to remove them later?
 
-A1: 
+A1: This means that the reads are long enough to pick up the primers at the ends. We will use a function to trim them out, specifically Mergepairs functon, using trimOverhang=T
 
 # Insepct read quality profiles 
 
@@ -102,7 +113,7 @@ You should look at least some of the quality profiles to assess the quality of t
 plotQualityProfile(fnFs[1:12])
 ```
 Q2: Where will we trim our forward reads, and why?
-A2:
+A2: We want to trim where the quality drops off, so around the last few nucleotides (bp 240)
 
 # Reverse reads 
 
@@ -111,10 +122,10 @@ plotQualityProfile(fnRs[1:12])
 ```
 
 Q3: How does the quality of the reverse reads compare to the forward reads? Is the quality of these reads acceptable to continue through the DADA2 pipeline? Why or why not? 
-A3: 
+A3: The quality of the reverse reads is usually poorer than the forward reads. This quality is acceptable as long as we trim more off toward the end. DADA2 incorporates quality information, so it ends up being okay.
 
 Q4: Where will we trim our reverse reads and why?
-A4: 
+A4: We will trim it at ~150 bp because that is where the quality drops off.
 
 # Filtering and Trimming 
 
@@ -135,6 +146,7 @@ Below is the actual filtering step. We're using standard filtering parameters.
 1. dada2 generally advises trimming the last few nucleotides for weird sequencing errors that can pop up there. 
 2. maxEE is the max number of expected errors (calculated from Q's) to allow in each read. This is a probability calculation. 3. minQ is threshold Q - and read with a Q < minQ after truncating reads get discarded. This isn't that important for 16S. 
 
+
 ```{r}
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen = c(240, 150), maxN = 0, maxEE = c(2,2), truncQ = 2, rm.phix = TRUE, compress = TRUE)
 #look at this output. This tells you how many reads were removed. 
@@ -143,11 +155,11 @@ out
 
 Q5: What does it mean if a base call (base pairs read by the sequencer) is an "N"? Are we going to use sequences that contain N's in the rest of our workflow? Which part of the filterAndTrim function specifies how to treat sequences with N's in them? 
 
-A5: 
+A5: N is any ambigous position where the sequencer does not know which nucleotide to put it in. The maxN=0 part of the code treats this issue and removes N's.
 
 Q6: Based on the "out" table, what is the average percentage of our reads that we retain (reads that did not get filtered out) going forward in the pipeline? 
 
-A6: 
+A6: The average percentage is 93%.
 
 # Learn the error rates
 
@@ -172,7 +184,7 @@ plotErrors(errF, nominalQ = TRUE)
 plotErrors(errR, nominalQ = TRUE)
 ```
 Q7: What is the relationship between quality score and error rate show in the 2 plots above? 
-A7: 
+A7: The estimated error rates are a good fit for the actual error rates. There is also a drop in error as we increase the quality score.
 
 # Dereplication 
 
@@ -188,7 +200,7 @@ names(derepRs) <- sample.names
 
 Q8: What percentage of the reverse reads in the ASH171-A0 sample were unique? 
 
-A8: 
+A8: About 60% of reverse reads were unique.
 
 # Infer sequence variants 
 
@@ -217,14 +229,14 @@ head(mergers[[1]])
 ```
 Q9: What does the nmatch column tell us about our merged forward & reverse reads?
 
-A9: 
+A9: The nmatch column tells us the number of bases that match in the overlap region.
 
 save the unassigned merged reads
 
 ```{r}
 #tutorial says week 5/6, just save in Input & Output data for Week 7 (we are on a different schedule this year than previous)
-saveRDS(mergers, "~/Documents/144l_students_2021/Output_Data/week7/dada_merged.rds")
-saveRDS(mergers, "~/Documents/144l_students_2021/Input_Data/week7/dada_merged.rds")
+saveRDS(mergers, "~/Desktop/144l_students_2021/Output_Data/week6/dada_meged.rds")
+saveRDS(mergers, "~/Desktop/144l_students_2021/Input_Data/week 7/dada_merged.rds")
 ```
 
 Construct a sequence table of our samples that is analogous to the "OTU table" produced by classical methods
@@ -259,7 +271,7 @@ sum(seqtab.nochim)/sum(seqtab)
 here we are referencing the Silva database
 
 ```{r}
-taxa <- assignTaxonomy(seqtab.nochim, "~/Documents/144l_students_2021/Input_Data/week7/Reference_Database/silva_nr_v138_train_set.fa", multithread = TRUE)
+taxa <- assignTaxonomy(seqtab.nochim, "~/Desktop/144l_students_2021/Input_Data/week 7/Reference_Database/silva_nr_v138_train_set.fa", multithread = TRUE)
 
 ```
 
@@ -270,13 +282,13 @@ create a table out of the taxa data (one with the sequences and taxonomic assign
 these are the tables you want to save!! 
 
 ```{r}
-saveRDS(t(seqtab.nochim), "~/Documents/144l_students_2021/Output_Data/week7/seqtab-nochimtaxa.rds")
-saveRDS(taxa, "~/Documents/144l_students_2021/Output_Data/week7/taxa.rds")
+saveRDS(t(seqtab.nochim), "~/Desktop/144l_students_2021/Output_Data/week6/seqtab-nochimtaxa.rds")
+saveRDS(taxa, "~/Desktop/144l_students_2021/Output_Data/week6/taxa.rds")
 
 #save in both Output and Input data folders for week7
 
-saveRDS(t(seqtab.nochim), "~/Documents/144l_students_2021/Input_Data/week7/seqtab-nochimtaxa.rds")
-saveRDS(taxa, "~/Documents/144l_students_2021/Input_Data/week7/taxa.rds")
+saveRDS(t(seqtab.nochim), "~/Desktop/144l_students_2021/Input_Data/week 7/seqtab-nochimtaxa.rds")
+saveRDS(taxa, "~/Desktop/144l_students_2021/Input_Data/week 7/taxa.rds")
         
 ```
 
