@@ -1,6 +1,6 @@
 ---
 title: "Phyloseq"
-author: "Your Name"
+author: "Sammy Chan"
 date: "11/10/2021"
 output: github_document
 ---
@@ -27,16 +27,16 @@ library(lubridate)
 # Import Data 
 
 ```{r message = F}
-count.tab <- read_rds("~/Documents/144l_students_2021/Input_Data/week7/seqtab-nochimtaxa.rds") #table of counts for each sequence in each sample
-tax.tab <- read_rds("~/Documents/144l_students_2021/Input_Data/week7/taxa.rds") #table that matches ASV to sequence
+count.tab <- read_rds("~/Desktop/144l_students_2021/Input_Data/week 7/seqtab-nochimtaxa.rds") #table of counts for each sequence in each sample
+tax.tab <- read_rds("~/Desktop/144l_students_2021/Input_Data/week 7/taxa.rds") #table that matches ASV to sequence
 
 #you will need to download the ACIDD_Exp_Processed_DOC_BGE.rds and the ACIDD_Exp_BactAbund.xlsx files from Justine's Github repository (located in Input_Data/week7/) and put them into your own local Input Data folder
-metadata_OG <- read_excel("~/Documents/144l_students_2021/Input_Data/week7/ACIDD_Exp_BactAbund.xlsx", sheet = "Metadata")
+metadata_OG <- read_excel("~/Desktop/144l_students_2021/Input_Data/week7/ACIDD_Exp_BactAbund.xlsx", sheet = "Metadata")
 glimpse(metadata_OG)
 metadata <- metadata_OG %>%
   mutate(Datetime = ymd_hm(Datetime))
 glimpse(metadata)
-metadata_doc <- read_rds("~/Documents/144l_students_2021/Input_Data/week7/ACIDD_Exp_Processed_DOC_BGE.rds")
+metadata_doc <- read_rds("~/Desktop/144l_students_2021/Input_Data/week7/ACIDD_Exp_Processed_DOC_BGE.rds")
 glimpse(metadata_doc)
 join <- left_join(metadata_doc, metadata)
 sample.tab <- join %>%
@@ -67,7 +67,7 @@ sub_ps <- ps %>%
 
 Q1: What did we do in the code chunk above? (What is the difference between phyloseq object ps and phyloseq object sub_ps?) Why did we do this? 
 
-A1: 
+A1: By using the sub_ps function, we are subsetting from the taxa table and remove any organisms that belong to the mitochondria family as well as anything from the cholorplast order. 
 
 # Sample Summary
 
@@ -86,7 +86,7 @@ ggplot(sample_sum_df, aes(x = sum)) +
 ```
 Q2: Describe what "sequencing depth" means in your own words. 
 
-A2: 
+A2: Sequencing depth means the amount of samples that was read an x amount of times. For example the first bar shows 2 samples that have been read between 5500-6500 times.
 
 ```{r}
 # mean, max and min of sample read counts
@@ -132,7 +132,7 @@ mean(sample_sums(ps_min)) #6048 this is also the same as min(sample_sums(sub)ps)
 
 Q3: Do you think that the subsampling we did here will have a large effect on our beta diveristy analyses? why or why not? 
 
-A3: 
+A3: No subsampling did not have a large effect on beta diversity because the mean values before and after subsampling are very close in value, meaning subsampling has a small effect.
 
 ## NMDS
 
@@ -188,11 +188,11 @@ NMDS plots attempt to show ordinal distances between samples as accurately as po
 
 Q4: Which datasets were used to make the two NMDS plots above? Based on how these two plots look, which dataset are we going to move forward with and why? 
 
-A4: 
+A4: Data from the NOT subsetted data set was plotted along with subsampled data set. Since the two plots look similar, we will move forward with the standardized where we normalized the read counts. 
 
 Q5: Describe in a couple of sentences what patterns you see in the beta diversity of the communities in the control and Ash Leachate treatments. 
 
-A5: 
+A5: At time 0, the communities are similar to each other because they are close in distance. However, over time, they become more dissimilar and spread further apart. This causes beta diversity to increase. The ash leachate and control samples are clustered closely together in terms of time scale: time 0 both are similar and t4 communities are also similar for both treatment and control.
 
 # Alpha Diversity
 
@@ -277,7 +277,7 @@ From this plot we can see between the treatments that the richness of the contro
 
 Q6: Summarize the major takeaways from the alpha diversity plots you generated. 
 
-A6: 
+A6: The plots show that the control sample has a lot less variability compared to the ash leachate treatment. Furthermore, the control tends to have higher average levels of diversity than ash leachate. 3 out of 4 plots have statistically significant data. Over time, richness decreased over time but Shannon index did not vary much over time.
 
 # Who??
 
@@ -377,17 +377,17 @@ relaheat
 
 Q7: Who uniquely increased in relative abundance in the ash leachate treatment that did not in the control? what about decrease?
 
-A7: 
+A7: Alteromonodales and Oceanspirllales both increase in abundance in the ash leachate treatment but not in the control. On the other hand, Cellvibrionales decreases in the ash leachate treatment but remains high in the control.
 
 Everything shown here is just a snapshot of what you can look at with your community composition data. There are many other resources you can use to get ideas of how to look at different aspects of your data, including the [phyloseq tutorial](https://joey711.github.io/phyloseq/) and [happy belly bioinformatics](https://astrobiomike.github.io). It's up to you and your questions!!
 
 # Save and knit
 
 ```{r}
-saveRDS(sweet.tab, "~/Documents/144l_students_2021/Output_Data/week7/Custom_ASV_Table.rds")
-saveRDS(sub_ps, "~/Documents/144l_students_2021/Output_Data/week7/phyloseq_obj.rds")
-saveRDS(ps_min, "~/Documents/144l_students_2021/Output_Data/week7/subsampled_phyloseq_obj.rds")
-saveRDS(alphadiv, "~/Documents/144l_students_2021/Output_Data/week7/alphadiv.rds")
+saveRDS(sweet.tab, "~/Desktop/144l_students_2021/Output_Data/week6//Custom_ASV_Table.rds")
+saveRDS(sub_ps, "~/Desktop/144l_students_2021/Output_Data/week6/phyloseq_obj.rds")
+  saveRDS(ps_min, "~/Desktop/144l_students_2021/Output_Data/week6/subsampled_phyloseq_obj.rds")
+saveRDS(alphadiv, "~/Desktop/144l_students_2021/Output_Data/week6/alphadiv.rds")
 
 ```
 
