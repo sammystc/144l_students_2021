@@ -1,8 +1,8 @@
 ---
 title: "211122_144L_phyloseq"
-author: "Your Name"
-date: "11/17/2021"
-output: html_document
+author: "Sammy Chan"
+date: "11/22/2021"
+output: github_document
 ---
 # Intro
 
@@ -31,21 +31,24 @@ library(RColorBrewer)
 # Import Data 
 
 ```{r message = F}
-count.tab <- read_rds("~/Documents/144l_students_2021/Input_Data/week9/144Lseqtab-nochimtaxa.rds") #table of counts for each sequence in each sample, update the file path for the .rds file you generated with dada2
-tax.tab <- read_rds("~/Documents/144l_students_2021/Input_Data/week9/144L_taxa.rds") #table that matches ASV to sequence, update file path to your own file
+count.tab <- read_rds("~/Desktop/144l_students_2021/Input_Data/week 9/seqtab-nochimtaxa.rds") #table of counts for each sequence in each sample, update the file path for the .rds file you generated with dada2
+tax.tab <- read_rds("~/Desktop/144l_students_2021/Input_Data/week 9/taxa.rds") #table that matches ASV to sequence, update file path to your own file
 
 #you will need to download the Kelp_Exp_Processed_DOC_BGE.rds and the 144L_2021_metadata.xlsx files from the week9 folder on the class Google Drive and put them into your own local Input Data folder
-metadata_OG <- read_excel("~/Documents/144l_students_2021/Input_Data/week9/144L_2021_metadata.xlsx", sheet = "Metadata")
+metadata_OG <- read_excel("~/Desktop/144l_students_2021/Input_Data/week 9/144L_2021_metadata.xlsx", sheet = "Metadata")
 glimpse(metadata_OG)
 metadata <- metadata_OG %>%
   select(-Datetime)
 glimpse(metadata)
 #you can get this file from your own week6 data
-metadata_doc <- read_rds("~/Documents/144l_students_2021/Output_Data/week6/144L_Exp_Processed_BactAbund.rds")
+metadata_doc <- read_rds("~/Desktop/144l_students_2021/Output_Data/week6/144L_Exp_Processed_BactAbund.rds")
 glimpse(metadata_doc)
-metadata_mock <- read_csv("~/Documents/144l_students_2021/Input_Data/week9/144L_2018_metadata.csv")
-glimpse(metadata_mock)
-join1 <- rbind(metadata_mock, metadata_doc)
+metadata_mock <- read_csv("~/Desktop/144l_students_2021/Input_Data/week 9/144L_2018_metadata.csv")
+mock_names <- colnames(metadata_mock)
+doc_names <- colnames(metadata_doc)
+common_names <- intersect(mock_names, doc_names)
+#glimpse(metadata_mock)
+join1 <- rbind(metadata_mock[common_names], metadata_doc[common_names])
 glimpse(join1)
 join2 <- join1 %>%
   select(-Datetime)
@@ -81,9 +84,6 @@ sub_ps <- ps %>%
   subset_taxa(Family  != "mitochondria" & Order  != "Chloroplast")
 ```
 
-Q1: What did we do in the code chunk above? (What is the difference between phyloseq object ps and phyloseq object sub_ps?) Why did we do this? 
-
-A1: 
 
 # Sample Summary
 
@@ -100,9 +100,6 @@ ggplot(sample_sum_df, aes(x = sum)) +
   theme(axis.title.y = element_blank()) +
   theme_bw()
 ```
-Q2: Describe what "sequencing depth" means in your own words. 
-
-A2: 
 
 Rarefaction Curve - another way to visualize your read depth!
 ```{r}
@@ -153,9 +150,6 @@ mean(sample_sums(sub_ps)) #7686
 mean(sample_sums(ps_min)) #6048 this is also the same as min(sample_sums(sub)ps) 
 ```
 
-Q3: Do you think that the subsampling we did here will have a large effect on our beta diveristy analyses? why or why not? 
-
-A3: 
 
 ## NMDS
 
@@ -211,13 +205,6 @@ nmds_min.plot +
 
 NMDS plots attempt to show ordinal distances between samples as accurately as possible in two dimensions. It is important to report the stress of these plots, because a high stress value means that the algorithm had a hard time representing the distances between samples in 2 dimensions. The stress of this plot was good - it was .04 (generally anything below .2 is considered acceptable). 
 
-Q4: Which datasets were used to make the two NMDS plots above? Based on how these two plots look, which dataset are we going to move forward with and why? 
-
-A4: 
-
-Q5: Describe in a couple of sentences what patterns you see in the beta diversity of the communities in the control and Ash Leachate treatments. 
-
-A5: 
 
 # Alpha Diversity
 
@@ -300,9 +287,6 @@ alpha.plot2
 
 From this plot we can see between the treatments that the richness of the control samples were higher at the initial condition than the ash leachate, suggesting that there may have been some quality control issues as we would expect the initial samples to all have the same richness. By timepoint 6, it looks like the richness was about the same between the control and the ash leachate. Overall diversity was similar between the treatments at the initial condition, but not by the end of the experiment. The ash leachate samples at timepoint 6 may have been less even.  
 
-Q6: Summarize the major takeaways from the alpha diversity plots you generated. 
-
-A6: 
 
 # Who??
 
@@ -401,19 +385,16 @@ facet_grid(~factor(Treatment, levels = levels)) +
 relaheat
 ```
 
-Q7: Who uniquely increased in relative abundance in the ash leachate treatment that did not in the control? what about decrease?
-
-A7: 
 
 Everything shown here is just a snapshot of what you can look at with your community composition data. There are many other resources you can use to get ideas of how to look at different aspects of your data, including the [phyloseq tutorial](https://joey711.github.io/phyloseq/) and [happy belly bioinformatics](https://astrobiomike.github.io). It's up to you and your questions!!
 
 # Save and knit
 
 ```{r}
-saveRDS(sweet.tab, "~/Documents/144l_students_2021/Output_Data/week9/Custom_ASV_Table.rds")
-saveRDS(sub_ps, "~/Documents/144l_students_2021/Output_Data/week9/phyloseq_obj.rds")
-saveRDS(ps_min, "~/Documents/144l_students_2021/Output_Data/week9/subsampled_phyloseq_obj.rds")
-saveRDS(alphadiv, "~/Documents/144l_students_2021/Output_Data/week9/alphadiv.rds")
+saveRDS(sweet.tab, "~/Desktop/144l_students_2021/Output_Data/week 9/Custom_ASV_Table.rds")
+saveRDS(sub_ps, "~/Desktop/144l_students_2021/Output_Data/week 9/phyloseq_obj.rds")
+saveRDS(ps_min, "~/Desktop/144l_students_2021/Output_Data/week 9/subsampled_phyloseq_obj.rds")
+saveRDS(alphadiv, "~/Desktop/144l_students_2021/Output_Data/week 9/alphadiv.rds")
 
 ```
 
@@ -478,7 +459,7 @@ gen.top <- Reduce(rbind, top)
 ```
 
 ```{r}
-HowManydivision <- length(unique(gen.top[[61]]))
+HowManydivision <- length(unique(gen.top[[53]]))
 getPalette = colorRampPalette(brewer.pal(8, "Set2")) 
 PhylaPalette = getPalette(HowManydivision)
 #PhylaPalette = getPalette(2)
